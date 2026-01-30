@@ -39,7 +39,7 @@ body {
   overflow: hidden;
 }
 
-/* HEADER */
+
 .header {
   padding: 22px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -55,7 +55,6 @@ body {
   opacity: 0.9;
 }
 
-/* BODY */
 .content {
   padding: 22px;
 }
@@ -73,7 +72,6 @@ input:focus {
   border-color: var(--primary);
 }
 
-/* LIST */
 .list {
   margin-top: 16px;
   max-height: 340px;
@@ -141,7 +139,6 @@ input:focus {
   color: var(--muted);
 }
 
-/* STATS */
 .stats {
   margin-top: 14px;
   font-size: 12px;
@@ -174,7 +171,6 @@ input:focus {
 </div>
 
 <script>
-/* DATA */
 const PRODUCTS = [
   { name: "Wireless Mouse", category: "Accessories", price: 1299 },
   { name: "Mechanical Keyboard", category: "Accessories", price: 3499 },
@@ -201,7 +197,6 @@ const searchInput = document.getElementById("search");
 const renderStat = document.getElementById("renderStat");
 const cacheStat = document.getElementById("cacheStat");
 
-/* DEBOUNCE */
 function debounce(fn, delay = 300) {
   let timer;
   return (...args) => {
@@ -210,7 +205,6 @@ function debounce(fn, delay = 300) {
   };
 }
 
-/* MEMOIZATION */
 const cache = new Map();
 
 function filterData(query) {
@@ -228,7 +222,6 @@ function filterData(query) {
   return result;
 }
 
-/* RENDER */
 const VISIBLE_COUNT = 40;
 
 function render(items) {
@@ -263,7 +256,6 @@ function render(items) {
     `Rendered ${Math.min(items.length, VISIBLE_COUNT)} / ${items.length} in ${(end - start).toFixed(2)}ms`;
 }
 
-/* EVENTS */
 list.addEventListener("click", e => {
   const item = e.target.closest(".item");
   if (!item) return;
@@ -279,10 +271,10 @@ const handleSearch = debounce(e => {
   render(filterData(query));
 }, 300);
 
-/* INIT */
 render(DATA);
 searchInput.addEventListener("input", handleSearch);
 </script>
 
 </body>
+
 </html>
