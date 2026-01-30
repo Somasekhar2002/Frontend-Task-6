@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Frontend Performance Optimization</title>
+
+<style>
+:root {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --primary: #2563eb;
+  --secondary: #7c3aed;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --border: #e2e8f0;
+  --muted: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e0e7ff, #f8fafc);
+  padding: 40px;
+}
+
+.container {
+  max-width: 580px;
+  margin: auto;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+
+/* HEADER */
+.header {
+  padding: 22px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* BODY */
+.content {
+  padding: 22px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* LIST */
+.list {
+  margin-top: 16px;
+  max-height: 340px;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.item {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: #f0f7ff;
+  transform: translateX(3px);
+}
+
+.item.active {
+  background: #e0ecff;
+  border-left: 4px solid var(--primary);
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.item-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.badge.Accessories { background: var(--primary); }
+.badge.Audio { background: var(--secondary); }
+.badge.Power { background: var(--warning); }
+.badge.Display { background: var(--success); }
+.badge.Storage { background: #0ea5e9; }
+
+.price {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* STATS */
+.stats {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h2>Optimized Product Search</h2>
+      <div class="subtitle">Debounce • Memoization • Virtual Rendering</div>
+    </div>
+
+    <div class="content">
+      <input id="search" placeholder="Search products…" />
+      <div class="list" id="list"></div>
+
+      <div class="stats">
+        <span id="renderStat"></span>
+        <span id="cacheStat"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* DATA */
+const PRODUCTS = [
+  { name: "Wireless Mouse", category: "Accessories", price: 1299 },
+  { name: "Mechanical Keyboard", category: "Accessories", price: 3499 },
+  { name: "USB-C Charger", category: "Power", price: 999 },
+  { name: "Noise Cancelling Headphones", category: "Audio", price: 7999 },
+  { name: "Gaming Monitor", category: "Display", price: 15999 },
+  { name: "Laptop Stand", category: "Accessories", price: 1899 },
+  { name: "Bluetooth Speaker", category: "Audio", price: 2499 },
+  { name: "External SSD", category: "Storage", price: 5999 }
+];
+
+const DATA = Array.from({ length: 1000 }, (_, i) => {
+  const p = PRODUCTS[i % PRODUCTS.length];
+  return {
+    id: i,
+    name: `${p.name} #${i}`,
+    category: p.category,
+    price: p.price
+  };
+});
+
+const list = document.getElementById("list");
+const searchInput = document.getElementById("search");
+const renderStat = document.getElementById("renderStat");
+const cacheStat = document.getElementById("cacheStat");
+
+/* DEBOUNCE */
+function debounce(fn, delay = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+/* MEMOIZATION */
+const cache = new Map();
+
+function filterData(query) {
+  if (cache.has(query)) {
+    cacheStat.textContent = "Cache: HIT";
+    return cache.get(query);
+  }
+  cacheStat.textContent = "Cache: MISS";
+
+  const result = DATA.filter(item =>
+    item.name.toLowerCase().includes(query)
+  );
+
+  cache.set(query, result);
+  return result;
+}
+
+/* RENDER */
+const VISIBLE_COUNT = 40;
+
+function render(items) {
+  const start = performance.now();
+  list.innerHTML = "";
+
+  if (!items.length) {
+    list.innerHTML = `<div class="empty">No products found</div>`;
+    renderStat.textContent = "Rendered 0 items";
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  items.slice(0, VISIBLE_COUNT).forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="item-title">${item.name}</div>
+      <div class="item-meta">
+        <span class="badge ${item.category}">${item.category}</span>
+        <span class="price">₹${item.price}</span>
+      </div>
+    `;
+    fragment.appendChild(div);
+  });
+
+  list.appendChild(fragment);
+
+  const end = performance.now();
+  renderStat.textContent =
+    `Rendered ${Math.min(items.length, VISIBLE_COUNT)} / ${items.length} in ${(end - start).toFixed(2)}ms`;
+}
+
+/* EVENTS */
+list.addEventListener("click", e => {
+  const item = e.target.closest(".item");
+  if (!item) return;
+
+  document.querySelectorAll(".item.active")
+    .forEach(el => el.classList.remove("active"));
+
+  item.classList.add("active");
+});
+
+const handleSearch = debounce(e => {
+  const query = e.target.value.toLowerCase().trim();
+  render(filterData(query));
+}, 300);
+
+/* INIT */
+render(DATA);
+searchInput.addEventListener("input", handleSearch);
+</script>
+
+</body>
+</html>
